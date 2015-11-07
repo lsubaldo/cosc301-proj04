@@ -467,7 +467,7 @@ procdump(void)
 }
 
 int
-clone(void)
+kern_clone(void(*fcn)(void*), void *arg, void *stack)
 {
   int i, pid;
   struct proc *np;
@@ -518,6 +518,5 @@ clone(void)
   switchuvm(newtask);
   newtask->state = RUNNABLE;
 
-  
   return pid;
 }

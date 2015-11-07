@@ -89,3 +89,19 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int sys_clone(void) {
+	int *fcn(void*);
+	int *arg;
+	int *stack; 
+	if (argint(0, &fcn) < 0) {
+		return -1; 
+	}
+	if (argint(0, &arg) < 0) {
+		return -1; 
+	}
+	if (argint(0, &stack) < 0) {
+		return -1; 
+	}
+	return kern_clone((void)fcn(void*), (void*)(arg), (void*)(stack)); 
+}
