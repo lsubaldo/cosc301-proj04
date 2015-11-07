@@ -87,6 +87,7 @@ userinit(void)
     panic("userinit: out of memory?");
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
   p->sz = PGSIZE;
+  p->thread = 0; 
   memset(p->tf, 0, sizeof(*p->tf));
   p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
   p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
@@ -463,4 +464,60 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+int
+clone(void)
+{
+  int i, pid;
+  struct proc *np;
+
+  // Allocate process.
+  if((np = allocproc()) == 0)
+    return -1;
+
+  // Copy process state from p.
+  //don't necessarily want to copy the address space of the calling process --> thread will share the address space with the calling thread/process 
+  if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
+    kfree(np->kstack);
+    np->kstack = 0;
+    np->state = UNUSED;
+    return -1;
+  }
+  np->sz = proc->sz;
+  np->parent = proc;
+  *np->tf = *proc->tf;
+
+  // Clear %eax so that fork returns 0 in the child.
+  np->tf->eax = 0;
+
+  for(i = 0; i < NOFILE; i++)
+    if(proc->ofile[i])
+      np->ofile[i] = filedup(proc->ofile[i]);
+  np->cwd = idup(proc->cwd);
+
+  safestrcpy(np->name, proc->name, sizeof(proc->name));
+ 
+  pid = np->pid;
+
+  // temporary array to copy into the bottom of new stack 
+  // for the thread (i.e., to the high address in stack
+  // page, since the stack grows downward)
+  uint ustack[2];
+  uint sp = (uint)stack+PGSIZE;
+  ustack[0] = 0xffffffff; // fake return PC
+  ustack[1] = (uint)arg;
+
+  sp -= 8; // stack grows down by 2 ints/8 bytes
+  if (copyout(newtask->pgdir, sp, ustack, 8) < 0) {
+    // failed to copy bottom of stack into new task
+    return -1;
+  }
+  newtask->tf->eip = (uint)fnptr;
+  newtask->tf->esp = sp;
+  switchuvm(newtask);
+  newtask->state = RUNNABLE;
+
+  
+  return pid;
 }
