@@ -178,8 +178,7 @@ void            switchuvm(struct proc*);
 void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
-int 			kern_clone(void, void*, void*); 
-void 			do_clone(struct proc *); 
+int 			clone(void(*fcn)(void*), void*, void*); 
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

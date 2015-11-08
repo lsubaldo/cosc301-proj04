@@ -87,7 +87,8 @@ userinit(void)
     panic("userinit: out of memory?");
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
   p->sz = PGSIZE;
-  p->thread = 0; 
+  p->thread = 0;  //initialize state here
+
   memset(p->tf, 0, sizeof(*p->tf));
   p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
   p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
@@ -467,7 +468,7 @@ procdump(void)
 }
 
 int
-kern_clone(void(*fcn)(void*), void *arg, void *stack)
+clone(void(*fcn)(void*), void *arg, void *stack)
 {
   int i, pid;
   struct proc *np;

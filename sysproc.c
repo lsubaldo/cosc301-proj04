@@ -91,17 +91,17 @@ sys_uptime(void)
 }
 
 int sys_clone(void) {
-	int *fcn(void*);
-	int *arg;
-	int *stack; 
+	int fcn(void*);
+	int arg;
+	int stack; 
 	if (argint(0, &fcn) < 0) {
 		return -1; 
 	}
-	if (argint(0, &arg) < 0) {
+	if (argint(1, &arg) < 0) {
 		return -1; 
 	}
-	if (argint(0, &stack) < 0) {
+	if (argint(2, &stack) < 0) {
 		return -1; 
 	}
-	return kern_clone((void)fcn(void*), (void*)(arg), (void*)(stack)); 
+	return clone((void*)fcn(void*), (void*)(&arg), (void*)(&stack)); 
 }
