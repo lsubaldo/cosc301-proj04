@@ -165,6 +165,7 @@ fork(void)
   np->state = RUNNABLE;
   release(&ptable.lock);
   
+  np->thread = 0; 
   return pid;
 }
 
@@ -473,21 +474,29 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   int i, pid;
   struct proc *np;
 
+  // Check to make sure that the stack is exactly one page in size and page-aligned 
+  if ((int)stack%PGSIZE != 0) {
+	return -1; 
+  }
+  
   // Allocate process.
   if((np = allocproc()) == 0)
     return -1;
 
   // Copy process state from p.
   //don't necessarily want to copy the address space of the calling process --> thread will share the address space with the calling thread/process 
-  if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
+  /*if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
     kfree(np->kstack);
     np->kstack = 0;
     np->state = UNUSED;
     return -1;
-  }
+  } */
+  
+  np->pgdir = proc->pgdir;
   np->sz = proc->sz;
   np->parent = proc;
   *np->tf = *proc->tf;
+  np->thread = 1; //set flag to 1 for thread
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
@@ -510,14 +519,56 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   ustack[1] = (uint)arg;
 
   sp -= 8; // stack grows down by 2 ints/8 bytes
-  if (copyout(newtask->pgdir, sp, ustack, 8) < 0) {
+  if (copyout(np->pgdir, sp, ustack, 8) < 0) {
     // failed to copy bottom of stack into new task
     return -1;
   }
-  newtask->tf->eip = (uint)fnptr;
-  newtask->tf->esp = sp;
-  switchuvm(newtask);
-  newtask->state = RUNNABLE;
+  np->tf->eip = (uint)fcn;
+  np->tf->esp = sp;
+  switchuvm(np);
+  np->state = RUNNABLE;
 
   return pid;
+}
+
+int
+join(int pid)
+{
+  struct proc *p;
+  int havekids;
+  int proc_id = pid; 
+
+  acquire(&ptable.lock);
+  for(;;){
+    // Scan through table looking for zombie children.
+    havekids = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->parent != proc)
+        continue;
+      havekids = 1;
+      if(p->state == ZOMBIE){
+        // Found one.
+        pid = p->pid;
+        kfree(p->kstack);
+        p->kstack = 0;
+        freevm(p->pgdir);
+        p->state = UNUSED;
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        release(&ptable.lock);
+        return proc_id;
+      }
+    }
+
+    // No point waiting if we don't have any children.
+    if(!havekids || proc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(proc, &ptable.lock);  //DOC: wait-sleep
+  }
 }
