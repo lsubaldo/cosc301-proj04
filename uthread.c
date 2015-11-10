@@ -3,6 +3,7 @@
 #include "fcntl.h"
 #include "user.h"
 #include "x86.h"
+#include "mmu.h" 
 
 /*
  * This is where you'll need to implement the user-level functions
@@ -22,12 +23,12 @@ void lock_release(lock_t *lock) {
 
 int thread_join(int pid) {
 	int new_pid = join(pid);
-	free(ustack); 
+	free((void*)ustack); 
 	return new_pid; 
 }
 
 int thread_create(void (*start_routine)(void *), void *arg) {
-	ustack = malloc(sizeof((int)*PGSIZE));
-    int pid = clone(*start_routine, arg, ustack);
+	ustack = (int)malloc(sizeof(int) * (PGSIZE));
+    int pid = clone(*start_routine, arg, (void*)ustack);
 	return pid; 
 }
