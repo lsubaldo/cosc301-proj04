@@ -7,18 +7,27 @@
 /*
  * This is where you'll need to implement the user-level functions
  */
-
-/*void lock_init(lock_t *lock) {
+int ustack; 
+	
+void lock_init(lock_t *lock) {
+	lock->flag = 0;
 }
 
 void lock_acquire(lock_t *lock) {
+	
 }
 
 void lock_release(lock_t *lock) {
 }
 
 int thread_join(int pid) {
+	int new_pid = join(pid);
+	free(ustack); 
+	return new_pid; 
 }
 
 int thread_create(void (*start_routine)(void *), void *arg) {
-}*/
+	ustack = malloc(sizeof((int)*PGSIZE));
+    int pid = clone(*start_routine, arg, ustack);
+	return pid; 
+}
