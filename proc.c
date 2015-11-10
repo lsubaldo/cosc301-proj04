@@ -181,6 +181,15 @@ exit(void)
   if(proc == initproc)
     panic("init exiting");
 
+  // Kills child processes
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->parent == proc){
+      if(p->pid <= 0)
+        kill(p->pid);
+		join(p->pid); //call join for each of the child threads that need to be cleaned up 
+    }
+  }
+
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
     if(proc->ofile[fd]){
@@ -221,6 +230,10 @@ wait(void)
 {
   struct proc *p;
   int havekids, pid;
+  
+  if (proc->thread == 1) {
+	return -1; 
+  }
 
   acquire(&ptable.lock);
   for(;;){
@@ -536,7 +549,9 @@ join(int pid)
 {
   struct proc *p;
   int havekids;
-  int proc_id = pid; 
+  int proc_id; 
+
+
 
   acquire(&ptable.lock);
   for(;;){
@@ -548,7 +563,7 @@ join(int pid)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
-        pid = p->pid;
+        proc_id = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
