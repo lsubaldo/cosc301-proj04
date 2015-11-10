@@ -8,17 +8,29 @@
 /*
  * This is where you'll need to implement the user-level functions
  */
-int ustack;  //only good for one thread 
+
+int ustack;  //only for single thread 
 	
 void lock_init(lock_t *lock) {
 	lock->flag = 0;
 }
 
 void lock_acquire(lock_t *lock) {
-	
+	if(holding(lock)) {
+		panic("acquire");
+	} 
+
+	while(xchg(&lock->flag,1) != 0){		//spin wait 
+		;
+	}
 }
 
 void lock_release(lock_t *lock) {
+	if(!holding(lock)) {
+		panic("release");
+	}
+
+	xchg(&lock->flag,0);
 }
 
 int thread_join(int pid) {

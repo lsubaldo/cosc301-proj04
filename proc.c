@@ -178,6 +178,8 @@ exit(void)
   struct proc *p;
   int fd;
 
+	// when a child threat exits, make sure address space is NOT freed!!!
+
   if(proc == initproc)
     panic("init exiting");
 
@@ -545,21 +547,25 @@ clone(void(*fcn)(void*), void *arg, void *stack)
 }
 
 int
-join(int pid)
+join(int pid)       // only for child threads 
 {
   struct proc *p;
   int havekids;
   int proc_id; 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> a42bb876261a1ba65cbe2595a4dbbd482d366d60
 
   acquire(&ptable.lock);
+	
   for(;;){
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
-        continue;
+      if(p->parent != proc)   // checks to see if parent proc = proc called join
+       	continue;
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
