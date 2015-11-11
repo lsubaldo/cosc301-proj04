@@ -6,3 +6,5 @@ typedef uint pde_t;
 typedef struct __lock_t {
 	int flag;
 } lock_t;
+
+void *ustack; 

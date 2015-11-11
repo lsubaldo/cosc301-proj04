@@ -13,38 +13,37 @@
  * This is where you'll need to implement the user-level functions
  */
 
-int ustack;  //only for single thread 
+//void *ustack;  //only for single thread 
 	
 void lock_init(lock_t *lock) {
 	lock->flag = 0;
 }
 
 void lock_acquire(lock_t *lock) {
-	if(holding(lock)) {
+	/*if (holding(lock)) {
 		panic("acquire");
-	} 
+	} */
 
-	while(xchg(&lock->flag,1) != 0){		//spin wait 
-		;
-	}
+	while ((xchg((uint*)&lock->flag, 1)) != 0);		//spin wait 
+		
 }
 
 void lock_release(lock_t *lock) {
-	if(!holding(lock)) {
+	/*if(!holding(lock)) {
 		panic("release");
-	}
+	}*/
 
-	xchg(&lock->flag,0);
+	xchg((uint*)&lock->flag, 0);
 }
 
 int thread_join(int pid) {
 	int new_pid = join(pid);
-	free((void*)ustack); 
+	free(ustack); 
 	return new_pid; 
 }
 
 int thread_create(void (*start_routine)(void *), void *arg) {
-	ustack = (int)malloc(2*PGSIZE);
-    int pid = clone(*start_routine, arg, (void*)ustack);
+	ustack = malloc(2*PGSIZE);
+    int pid = clone(*start_routine, arg, ustack);
 	return pid; 
 }
