@@ -185,21 +185,13 @@ exit(void)
 
   // Kills child processes 
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-		if(p->parent == proc){
+		 if(p->parent == proc){
 			if (p->pid == 0) {
 				kill(p->pid);
 				join(p->pid); //call join for each of the child threads that need to be cleaned up 
 			}
-		}
+		 }
     }
-  // Kills child processes
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->parent == proc){
-      if(p->pid <= 0)
-        kill(p->pid);
-		join(p->pid); //call join for each of the child threads that need to be cleaned up 
-    }
-  }
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
@@ -241,10 +233,11 @@ wait(void)
 {
   struct proc *p;
   int havekids, pid;
+  struct proc *t;
   
-  if (proc->thread == 1) {
+  /*if (proc->thread == 1) {
 	return -1; 
-  }
+  }*/
 
   acquire(&ptable.lock);
   for(;;){
@@ -259,7 +252,13 @@ wait(void)
 
       havekids = 1;
       if(p->state == ZOMBIE){
-        // Found one.
+         //Found one
+         //Check if we have any threads for this process before clearing space
+         for (t = ptable.proc; t < &ptable.proc[NPROC]; t++) {
+              if (t->thread == 1 && t->parent == p) {
+				return -1; //if thread still exists, can't free address space
+			  }
+         }
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
