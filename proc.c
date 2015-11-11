@@ -183,6 +183,7 @@ exit(void)
   if(proc == initproc)
     panic("init exiting");
 
+<<<<<<< HEAD
   // Kills child processes 
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 		if(p->parent == proc){
@@ -192,6 +193,16 @@ exit(void)
 			}
 		}
     }
+=======
+  // Kills child processes
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->parent == proc){
+      if(p->pid <= 0)
+        kill(p->pid);
+		join(p->pid); //call join for each of the child threads that need to be cleaned up 
+    }
+  }
+>>>>>>> 04392ea4c8e06568d6da9d935c37c676314cb834
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
@@ -233,6 +244,10 @@ wait(void)
 {
   struct proc *p;
   int havekids, pid;
+  
+  if (proc->thread == 1) {
+	return -1; 
+  }
 
   acquire(&ptable.lock);
   for(;;){
@@ -551,8 +566,18 @@ int
 join(int pid)       // only for child threads 
 {
   struct proc *p;
+<<<<<<< HEAD
   int havekids; 
   struct proc *thread = 0; 
+=======
+  int havekids;
+  int proc_id; 
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> a42bb876261a1ba65cbe2595a4dbbd482d366d60
+>>>>>>> 04392ea4c8e06568d6da9d935c37c676314cb834
 
   acquire(&ptable.lock);
   if (pid == -1) {
@@ -565,6 +590,7 @@ join(int pid)       // only for child threads
      	 havekids = 1;
       	if(p->state == ZOMBIE){
         // Found one.
+<<<<<<< HEAD
         	pid = p->pid;
        	 	kfree(p->kstack);
         	p->kstack = 0;
@@ -577,6 +603,20 @@ join(int pid)       // only for child threads
         	release(&ptable.lock);
         	return pid;
       	}
+=======
+        proc_id = p->pid;
+        kfree(p->kstack);
+        p->kstack = 0;
+        freevm(p->pgdir);
+        p->state = UNUSED;
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        release(&ptable.lock);
+        return proc_id;
+      }
+>>>>>>> 04392ea4c8e06568d6da9d935c37c676314cb834
     }
 
  	for(;;){
