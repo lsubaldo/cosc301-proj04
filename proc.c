@@ -590,8 +590,15 @@ join(int pid)       // only for child threads
         	return pid;
       	}
        }
-     }
-   }
+     // No point waiting if we don't have any children.
+    if(!havekids || proc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(proc, &ptable.lock);  //DOC: wait-sleep
+   } //end of outer for loop
+  }
 
  	for(;;){
     // Scan through table looking for zombie children.
@@ -613,7 +620,7 @@ join(int pid)       // only for child threads
 			return -1;
 		}
 
-     	 havekids = 1;
+     	havekids = 1;
       	if(p->state == ZOMBIE){
         // Found one.
         	pid = p->pid;
