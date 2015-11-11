@@ -183,6 +183,16 @@ exit(void)
   if(proc == initproc)
     panic("init exiting");
 
+  // Kills child processes 
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if(p->parent == proc){
+			if (p->pid == 0) {
+				kill(p->pid);
+				join(p->pid); //call join for each of the child threads that need to be cleaned up 
+			}
+		}
+    }
+
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
     if(proc->ofile[fd]){
@@ -229,8 +239,12 @@ wait(void)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+	  if (p->thread == 1) {
+		return -1; 
+      }
       if(p->parent != proc)
         continue;
+
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
@@ -537,34 +551,71 @@ int
 join(int pid)       // only for child threads 
 {
   struct proc *p;
-  int havekids;
-  int proc_id; 
+  int havekids; 
+  struct proc *thread = 0; 
 
   acquire(&ptable.lock);
-	
-  for(;;){
+  if (pid == -1) {
+  	for(;;){
     // Scan through table looking for zombie children.
-    havekids = 0;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)   // checks to see if parent proc = proc called join
-       	continue;
-      havekids = 1;
-      if(p->state == ZOMBIE){
+    	havekids = 0;
+    	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+     	 if(p->parent != proc || p->thread == 0)  
+       		continue;
+     	 havekids = 1;
+      	if(p->state == ZOMBIE){
         // Found one.
-        pid = p->pid;
-        kfree(p->kstack);
-        p->kstack = 0;
-        freevm(p->pgdir);
-        p->state = UNUSED;
-        p->pid = 0;
-        p->parent = 0;
-        p->name[0] = 0;
-        p->killed = 0;
-        release(&ptable.lock);
-        return proc_id;
-      }
+        	pid = p->pid;
+       	 	kfree(p->kstack);
+        	p->kstack = 0;
+        	freevm(p->pgdir);
+        	p->state = UNUSED;
+        	p->pid = 0;
+        	p->parent = 0;
+        	p->name[0] = 0;
+        	p->killed = 0;
+        	release(&ptable.lock);
+        	return pid;
+      	}
     }
 
+ 	for(;;){
+    // Scan through table looking for zombie children.
+    	havekids = 0;
+    	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+			if(p->pid == pid) {
+				if (p->thread == 0) {
+					return -1;
+				}
+				if (p->parent->pid != proc->pid) {    // parent = process
+					return -1;
+				}
+			thread = p;      // has found the child thread 
+			break;
+			}
+		}
+
+		if (thread == 0) {			
+			return -1;
+		}
+
+     	 havekids = 1;
+      	if(p->state == ZOMBIE){
+        // Found one.
+        	pid = p->pid;
+       	 	kfree(p->kstack);
+        	p->kstack = 0;
+        	freevm(p->pgdir);
+        	p->state = UNUSED;
+        	p->pid = 0;
+        	p->parent = 0;
+        	p->name[0] = 0;
+        	p->killed = 0;
+        	release(&ptable.lock);
+        	return pid;
+      	}
+
+	
     // No point waiting if we don't have any children.
     if(!havekids || proc->killed){
       release(&ptable.lock);
@@ -574,4 +625,5 @@ join(int pid)       // only for child threads
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
   }
+	return -1;
 }
