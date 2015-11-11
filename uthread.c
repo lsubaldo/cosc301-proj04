@@ -4,6 +4,10 @@
 #include "user.h"
 #include "x86.h"
 #include "mmu.h" 
+#include "spinlock.h"
+#include "param.h"
+#include "memlayout.h"
+#include "proc.h"
 
 /*
  * This is where you'll need to implement the user-level functions
