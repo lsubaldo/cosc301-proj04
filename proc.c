@@ -565,9 +565,8 @@ join(int pid)       // only for child threads
   int havekids; 
   struct proc *thread = 0; 
 
-
-  //acquire(&ptable.lock);
   if (pid == -1) {
+	acquire(&ptable.lock);
   	for(;;){
     // Scan through table looking for zombie children.
     	havekids = 0;
@@ -586,13 +585,13 @@ join(int pid)       // only for child threads
         	p->parent = 0;
         	p->name[0] = 0;
         	p->killed = 0;
-        	//release(&ptable.lock);
+        	release(&ptable.lock);
         	return pid;
       	}
        }
      // No point waiting if we don't have any children.
     if(!havekids || proc->killed){
-      //release(&ptable.lock);
+      release(&ptable.lock);
       return -1;
     }
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
@@ -600,6 +599,7 @@ join(int pid)       // only for child threads
    } //end of outer for loop
   }
 
+	acquire(&ptable.lock);
  	for(;;){
     // Scan through table looking for zombie children.
     	havekids = 0;
@@ -632,14 +632,14 @@ join(int pid)       // only for child threads
         	p->parent = 0;
         	p->name[0] = 0;
         	p->killed = 0;
-        	//release(&ptable.lock);
+        	release(&ptable.lock);
         	return pid;
       	}
 
 	
     // No point waiting if we don't have any children.
     if(!havekids || proc->killed){
-      //release(&ptable.lock);
+      release(&ptable.lock);
       return -1;
     }
 
