@@ -537,12 +537,6 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   np->pgdir = proc->pgdir;
   np->sz = proc->sz;
   np->parent = proc;
-  /*if (proc->thread == 1) {
-	np->parent = proc->parent; 
-  }
-  else {
-	np->parent = proc; 
-  }*/
   *np->tf = *proc->tf;
   np->thread = 1; //set flag to 1 for thread
 
