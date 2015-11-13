@@ -4,7 +4,6 @@ typedef unsigned char  uchar;
 typedef uint pde_t;
 
 typedef struct __lock_t {
-	int flag;
+	uint flag;
 } lock_t;
 
-void *ustack; 

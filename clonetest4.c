@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
     stack = stack + (PGSIZE - (uint)stack % PGSIZE);
 
   int clone_pid = clone(worker, 0, stack);
+  printf(1, "clone_pid is: %d\n", clone_pid); 
   assert(clone_pid > 0);
   while(global != 5);
 
@@ -43,6 +44,7 @@ int main(int argc, char *argv[])
       match = 0;
     }
   }
+  printf(1, "match is: %d\n", match); 
   assert(match == 1);
 
   printf(1, "TEST PASSED\n");

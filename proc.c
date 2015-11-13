@@ -111,6 +111,7 @@ growproc(int n)
 {
   uint sz;
   
+  struct proc *p; 
   sz = proc->sz;
   if(n > 0){
     if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
@@ -120,6 +121,19 @@ growproc(int n)
       return -1;
   }
   proc->sz = sz;
+
+  acquire(&ptable.lock);
+  if (proc->thread == 1) {
+	proc = proc->parent;
+    proc->sz = sz;
+	release(&ptable.lock);
+  }
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+	if (p->parent == proc && p->thread == 1) {
+		proc->sz = sz; 
+	}
+  }
+  release(&ptable.lock);
   switchuvm(proc);
   return 0;
 }
@@ -182,17 +196,6 @@ exit(void)
   if(proc == initproc)
     panic("init exiting");
 
-
-  // Kills child processes 
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-		 if(p->parent == proc){
-			if (p->pid == 0) {
-				kill(p->pid);
-				join(p->pid); //call join for each of the child threads that need to be cleaned up 
-			}
-		 }
-    }
-
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
     if(proc->ofile[fd]){
@@ -210,6 +213,25 @@ exit(void)
 
   // Parent might be sleeping in wait().
   wakeup1(proc->parent);
+
+  // Kills child processes if main process exits 
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		 if(p->parent == proc && p->thread == 1){
+			if (p->pid == 0) {
+				kill(p->pid);
+				join(p->pid); //call join for each of the child threads that need to be cleaned up 
+			}
+		 }
+    }
+
+  //if child thread is exiting, it's just going to exit
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+	if (p->parent == proc && p->thread == 1) {
+		release(&ptable.lock);
+		join(p->pid);
+		acquire(&ptable.lock);
+	}
+  }
 
   // Pass abandoned children to init.
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
@@ -245,7 +267,8 @@ wait(void)
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 	  if (p->thread == 1) {
-		return -1; 
+		//return -1; 
+		continue; 
       }
       if(p->parent != proc)
         continue;
@@ -510,18 +533,16 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   if((np = allocproc()) == 0)
     return -1;
 
-  // Copy process state from p.
-  //don't necessarily want to copy the address space of the calling process --> thread will share the address space with the calling thread/process 
-  /*if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
-    kfree(np->kstack);
-    np->kstack = 0;
-    np->state = UNUSED;
-    return -1;
-  } */
-  
+  //Thread is sharing the calling process's address space   
   np->pgdir = proc->pgdir;
   np->sz = proc->sz;
   np->parent = proc;
+  /*if (proc->thread == 1) {
+	np->parent = proc->parent; 
+  }
+  else {
+	np->parent = proc; 
+  }*/
   *np->tf = *proc->tf;
   np->thread = 1; //set flag to 1 for thread
 
@@ -554,7 +575,7 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   np->tf->esp = sp;
   switchuvm(np);
   np->state = RUNNABLE;
-
+  cprintf("pid is: %d\n", pid); 
   return pid;
 }
 
