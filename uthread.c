@@ -14,7 +14,8 @@
  * This is where you'll need to implement the user-level functions
  */
 
-//void *ustack;  //only good for a single thread; need to make it accomodate multiple threads 
+void *ustack; 
+void *start_routine; 
 	
 void lock_init(lock_t *lock) {
 	lock->flag = 0;
@@ -36,16 +37,21 @@ void lock_release(lock_t *lock) {
 	xchg(&lock->flag, 0);
 }
 
-int thread_join(int pid) {
+int thread_join(int pid, void (*start_routine)(void *)) {
 	int new_pid = join(pid);
-	free((void*)ustack); 
+    printf(1, "start_routine in thread_join is: %d\n", start_routine); 
+	free(start_routine); 
 	return new_pid; 
 }
 
 int thread_create(void (*start_routine)(void *), void *arg) {
-	ustack = (int*)malloc(2*PGSIZE);
+	ustack = malloc(2*PGSIZE);
+	start_routine = ustack;
+    printf(1, "start_routine in thread_create is: %d\n", start_routine); 
+	if((uint)ustack % PGSIZE)
+     ustack = ustack + (PGSIZE - (uint)ustack % PGSIZE);
     printf(1, "ustack in thread_create is: %d\n", (int)ustack); 
-    int pid = clone(start_routine, arg, (void*)ustack);
+    int pid = clone(*start_routine, arg, ustack);
     printf(1, "pid in thread_create is: %d\n", pid); 
 	return pid; 
 }

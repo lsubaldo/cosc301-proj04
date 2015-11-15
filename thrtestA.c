@@ -11,6 +11,7 @@ int ppid;
 int num_threads = 8;
 int global = 0;
 lock_t xlock;
+void *ustack; 
 
 #define assert(x) if (x) {} else { \
   printf(1, "%s: %d ", __FILE__, __LINE__); \
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
   int join_pid = 0;
   int join_count = 0;
   while (join_pid != -1) {
-    join_pid = thread_join(-1);
+    join_pid = thread_join(-1, worker);
     if (join_pid != -1) {
       join_count += 1;
     }
@@ -71,7 +72,6 @@ void spawner(void *arg_ptr) {
   lock_acquire(&xlock);
   global += 1;
   lock_release(&xlock);
-
   exit();
 }
 
@@ -81,6 +81,7 @@ void worker(void *arg_ptr) {
 
   for(i = 0; i < 10000; i++) { tmp++; }
   sleep(10);
+  
   lock_acquire(&xlock);
   global += 1;
   lock_release(&xlock);

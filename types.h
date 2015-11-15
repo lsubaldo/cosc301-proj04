@@ -7,4 +7,3 @@ typedef struct __lock_t {
 	uint flag;
 } lock_t;
 
-int *ustack; 
