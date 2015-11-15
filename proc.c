@@ -525,6 +525,7 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   struct proc *np;
 
   // Check to make sure that the stack is exactly one page in size and page-aligned 
+  //cprintf("stack in clone is: %d\n", (int)stack); 
   if ((int)stack%PGSIZE != 0) {
 	return -1; 
   }
@@ -536,7 +537,13 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   //Thread is sharing the calling process's address space   
   np->pgdir = proc->pgdir;
   np->sz = proc->sz;
-  np->parent = proc;
+  //np->parent = proc;
+  if (proc->thread == 1) {
+	np->parent = proc->parent;
+  }
+  else {
+	np->parent = proc; 
+  }
   *np->tf = *proc->tf;
   np->thread = 1; //set flag to 1 for thread
 

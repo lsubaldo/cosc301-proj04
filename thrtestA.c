@@ -28,14 +28,16 @@ int main(int argc, char *argv[])
   int i;
   ppid = getpid();
   lock_init(&xlock);
-
+  printf(1, "Lock initialized.\n"); 
   int arg = num_threads / 2;
+  printf(1, "arg is: %d\n", arg); 
 
   int thread_pid = thread_create(spawner, (void *)arg);
   printf(1, "thread_pid %d\n", thread_pid);
   assert(thread_pid > 0);
 
   for(i = 0; i < arg; i++) {
+	printf(1, "arg in the loop is: %d\n", arg); 
     int thread_pid = thread_create(worker, (void *)arg);
     printf(1, "i: %d thread_pid %d\n", i, thread_pid);
     assert(thread_pid > 0);
