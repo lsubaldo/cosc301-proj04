@@ -52,14 +52,12 @@ int thread_join(int pid) {
 			free(allstacks[i].stack); 
 		}
 	}
-	printf(1, "new_pid is: %d\n", new_pid); 
+	//printf(1, "new_pid is: %d\n", new_pid); 
 	return new_pid; 
 }
 
 int thread_create(void (*start_routine)(void *), void *arg) {
 	void *ustack = malloc(2*PGSIZE);
-	//start_routine = ustack;
-    //printf(1, "start_routine in thread_create is: %d\n", start_routine); 
 	if((uint)ustack % PGSIZE)
      ustack = ustack + (PGSIZE - (uint)ustack % PGSIZE);
     printf(1, "ustack in thread_create is: %d\n", (int)ustack); 
@@ -68,7 +66,8 @@ int thread_create(void (*start_routine)(void *), void *arg) {
 	new_entry->stack = ustack;
     int pid = clone(start_routine, arg, ustack);
 	new_entry->pid = pid; 
-	num_stacks++; 
+	num_stacks++;
+ 
     printf(1, "pid in thread_create is: %d\n", pid); 
 	return pid; 
 }

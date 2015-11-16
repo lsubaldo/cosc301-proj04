@@ -110,7 +110,7 @@ int
 growproc(int n)
 {
   uint sz;
-  
+  acquire(&ptable.lock);
   struct proc *p; 
   sz = proc->sz;
   if(n > 0){
@@ -122,11 +122,9 @@ growproc(int n)
   }
   proc->sz = sz;
 
-  acquire(&ptable.lock);
   if (proc->thread == 1) {
 	proc = proc->parent;
     proc->sz = sz;
-	release(&ptable.lock);
   }
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
 	if (p->parent == proc && p->thread == 1) {
@@ -217,14 +215,13 @@ exit(void)
   // Kills child processes if main process exits 
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 		 if(p->parent == proc && p->thread == 1){
-			if (p->pid == 0) {
-				kill(p->pid);
-				join(p->pid); //call join for each of the child threads that need to be cleaned up 
+			p->killed = 1;
+			if (p->state == SLEEPING) {
+				p->state = RUNNABLE;
 			}
 		 }
     }
 
-  //if child thread is exiting, it's just going to exit
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
 	if (p->parent == proc && p->thread == 1) {
 		release(&ptable.lock);
