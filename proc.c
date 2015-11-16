@@ -252,11 +252,7 @@ wait(void)
 {
   struct proc *p;
   int havekids, pid;
-  struct proc *t;
-  
-  /*if (proc->thread == 1) {
-	return -1; 
-  }*/
+  //struct proc *t;
 
   acquire(&ptable.lock);
   for(;;){
@@ -264,7 +260,6 @@ wait(void)
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 	  if (p->thread == 1) {
-		//return -1; 
 		continue; 
       }
       if(p->parent != proc)
@@ -274,11 +269,11 @@ wait(void)
       if(p->state == ZOMBIE){
          //Found one
          //Check if we have any threads for this process before clearing space
-         for (t = ptable.proc; t < &ptable.proc[NPROC]; t++) {
+        /* for (t = ptable.proc; t < &ptable.proc[NPROC]; t++) {
               if (t->thread == 1 && t->parent == p) {
 				return -1; //if thread still exists, can't free address space
 			  }
-         }
+         }*/
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
@@ -522,7 +517,6 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   struct proc *np;
 
   // Check to make sure that the stack is exactly one page in size and page-aligned 
-  //cprintf("stack in clone is: %d\n", (int)stack); 
   if ((int)stack%PGSIZE != 0) {
 	return -1; 
   }

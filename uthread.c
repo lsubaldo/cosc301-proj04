@@ -46,10 +46,20 @@ void lock_release(lock_t *lock) {
 int thread_join(int pid) {
 	int new_pid; 
 	int i;
-	for (i = 0; i < num_stacks; i++) {
-		if (allstacks[i].pid == pid) {
-			new_pid = join(pid);
-			free(allstacks[i].stack); 
+    if (pid == -1) {
+		new_pid = join(pid); 
+		for (i = 0; i < num_stacks; i++) {
+			if (allstacks[i].pid == pid) {
+				free(allstacks[i].stack);
+			}
+		}
+	}
+	else {
+		for (i = 0; i < num_stacks; i++) {
+			if (allstacks[i].pid == pid) {
+				new_pid = join(pid);
+				free(allstacks[i].stack); 
+			}
 		}
 	}
 	//printf(1, "new_pid is: %d\n", new_pid); 
