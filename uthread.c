@@ -14,8 +14,14 @@
  * This is where you'll need to implement the user-level functions
  */
 
-void *ustack; 
-void *start_routine; 
+typedef struct __stackandpid {
+	void *stack;
+	int pid; 
+} stackandpid;
+
+stackandpid allstacks[64]; 
+
+int num_stacks = 0; 
 	
 void lock_init(lock_t *lock) {
 	lock->flag = 0;
@@ -37,21 +43,32 @@ void lock_release(lock_t *lock) {
 	xchg(&lock->flag, 0);
 }
 
-int thread_join(int pid, void (*start_routine)(void *)) {
-	int new_pid = join(pid);
-    printf(1, "start_routine in thread_join is: %d\n", start_routine); 
-	free(start_routine); 
+int thread_join(int pid) {
+	int new_pid; 
+	int i;
+	for (i = 0; i < num_stacks; i++) {
+		if (allstacks[i].pid == pid) {
+			new_pid = join(pid);
+			free(allstacks[i].stack); 
+		}
+	}
+	printf(1, "new_pid is: %d\n", new_pid); 
 	return new_pid; 
 }
 
 int thread_create(void (*start_routine)(void *), void *arg) {
-	ustack = malloc(2*PGSIZE);
-	start_routine = ustack;
-    printf(1, "start_routine in thread_create is: %d\n", start_routine); 
+	void *ustack = malloc(2*PGSIZE);
+	//start_routine = ustack;
+    //printf(1, "start_routine in thread_create is: %d\n", start_routine); 
 	if((uint)ustack % PGSIZE)
      ustack = ustack + (PGSIZE - (uint)ustack % PGSIZE);
     printf(1, "ustack in thread_create is: %d\n", (int)ustack); 
-    int pid = clone(*start_routine, arg, ustack);
+
+	stackandpid *new_entry = &allstacks[num_stacks];
+	new_entry->stack = ustack;
+    int pid = clone(start_routine, arg, ustack);
+	new_entry->pid = pid; 
+	num_stacks++; 
     printf(1, "pid in thread_create is: %d\n", pid); 
 	return pid; 
 }

@@ -11,7 +11,6 @@ int ppid;
 int num_threads = 8;
 int global = 0;
 lock_t xlock;
-void *ustack; 
 
 #define assert(x) if (x) {} else { \
   printf(1, "%s: %d ", __FILE__, __LINE__); \
@@ -50,7 +49,7 @@ int main(int argc, char *argv[])
   int join_pid = 0;
   int join_count = 0;
   while (join_pid != -1) {
-    join_pid = thread_join(-1, worker);
+    join_pid = thread_join(-1);
     if (join_pid != -1) {
       join_count += 1;
     }

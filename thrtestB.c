@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
   while (done < num_threads) { sleep(1); }
 
   for(i = 0; i < num_threads; i++) {
-    int join_pid = thread_join(-1, worker);
+    int join_pid = thread_join(-1);
     assert(join_pid > 0);
   }
 

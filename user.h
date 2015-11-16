@@ -26,7 +26,7 @@ int uptime(void);
 int clone(void(*fcn)(void*), void*, void*);
 int join(int); 
 int thread_create(void(*start_routine)(void*), void*); 
-int thread_join(int, void(*start_routine)(void*));
+int thread_join(int);
 void lock_acquire(lock_t*);
 void lock_release(lock_t*);
 void lock_init(lock_t*); 
