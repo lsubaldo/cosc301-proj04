@@ -109,16 +109,20 @@ userinit(void)
 int
 growproc(int n)
 {
-  uint sz;
   acquire(&ptable.lock);
+  uint sz;
   struct proc *p; 
   sz = proc->sz;
   if(n > 0){
-    if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
+    if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0) {
+	  release(&ptable.lock);
       return -1;
+	}
   } else if(n < 0){
-    if((sz = deallocuvm(proc->pgdir, sz, sz + n)) == 0)
+    if((sz = deallocuvm(proc->pgdir, sz, sz + n)) == 0) {
+	  release(&ptable.lock);
       return -1;
+	}
   }
   proc->sz = sz;
 
@@ -259,21 +263,13 @@ wait(void)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-	  if (p->thread == 1) {
+	  if (p->thread == 1 || p->parent != proc || p->pgdir == proc->pgdir) {
 		continue; 
       }
-      if(p->parent != proc)
-        continue;
 
       havekids = 1;
       if(p->state == ZOMBIE){
          //Found one
-         //Check if we have any threads for this process before clearing space
-        /* for (t = ptable.proc; t < &ptable.proc[NPROC]; t++) {
-              if (t->thread == 1 && t->parent == p) {
-				return -1; //if thread still exists, can't free address space
-			  }
-         }*/
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
@@ -567,7 +563,6 @@ clone(void(*fcn)(void*), void *arg, void *stack)
   np->tf->esp = sp;
   switchuvm(np);
   np->state = RUNNABLE;
-  cprintf("pid is: %d\n", pid); 
   return pid;
 }
 
@@ -578,6 +573,7 @@ join(int pid)       // only for child threads
   int havekids; 
   struct proc *thread = 0; 
 
+  //Just want to free any child
   if (pid == -1) {
 	acquire(&ptable.lock);
   	for(;;){
@@ -610,8 +606,9 @@ join(int pid)       // only for child threads
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
    } //end of outer for loop
-  }
+  } //end of pid == -1 if statement 
 
+	//For specific thread	
 	acquire(&ptable.lock);
  	for(;;){
     // Scan through table looking for zombie children.
@@ -624,7 +621,7 @@ join(int pid)       // only for child threads
 				if (p->parent->pid != proc->pid) {    // parent = process
 					return -1;
 				}
-			thread = p;      // has found the child thread 
+			thread = p;     // has found the child thread 
 			break;
 			}
 		}
@@ -634,17 +631,17 @@ join(int pid)       // only for child threads
 		}
 
      	havekids = 1;
-      	if(p->state == ZOMBIE){
+      	if(thread->state == ZOMBIE){
         // Found one.
-        	pid = p->pid;
-       	 	kfree(p->kstack);
-        	p->kstack = 0;
+        	pid = thread->pid;
+       	 	kfree(thread->kstack);
+        	thread->kstack = 0;
         	//freevm(p->pgdir);
-        	p->state = UNUSED;
-        	p->pid = 0;
-        	p->parent = 0;
-        	p->name[0] = 0;
-        	p->killed = 0;
+        	thread->state = UNUSED;
+        	thread->pid = 0;
+        	thread->parent = 0;
+        	thread->name[0] = 0;
+        	thread->killed = 0;
         	release(&ptable.lock);
         	return pid;
       	}

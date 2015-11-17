@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 
   for(i = 0; i < num_threads; i++) {
     int join_pid = thread_join(-1);
+	printf(1, "join_pid in thrtestB is: %d\n", join_pid); 
     assert(join_pid > 0);
   }
 

@@ -14,11 +14,14 @@
  * This is where you'll need to implement the user-level functions
  */
 
+lock_t ulock;
+
 typedef struct __stackandpid {
 	void *stack;
 	int pid; 
 } stackandpid;
 
+int num = 64;
 stackandpid allstacks[64]; 
 
 int num_stacks = 0; 
@@ -32,7 +35,8 @@ void lock_acquire(lock_t *lock) {
 		panic("acquire");
 	} */
 
-	while (xchg(&lock->flag, 1) != 0){}		//spin wait 
+	while (xchg(&lock->flag, 1) != 0){
+	}		//spin wait 
 		
 }
 
@@ -43,23 +47,12 @@ void lock_release(lock_t *lock) {
 	xchg(&lock->flag, 0);
 }
 
-int thread_join(int pid) {
-	int new_pid; 
+int thread_join(int pid) { 
 	int i;
-    if (pid == -1) {
-		new_pid = join(pid); 
-		for (i = 0; i < num_stacks; i++) {
-			if (allstacks[i].pid == pid) {
-				free(allstacks[i].stack);
-			}
-		}
-	}
-	else {
-		for (i = 0; i < num_stacks; i++) {
-			if (allstacks[i].pid == pid) {
-				new_pid = join(pid);
-				free(allstacks[i].stack); 
-			}
+	int new_pid = join(pid); 
+	for (i = 0; i < num_stacks; i++) {
+		if (allstacks[i].pid == new_pid) {
+			free(allstacks[i].stack);
 		}
 	}
 	//printf(1, "new_pid is: %d\n", new_pid); 
@@ -67,17 +60,26 @@ int thread_join(int pid) {
 }
 
 int thread_create(void (*start_routine)(void *), void *arg) {
-	void *ustack = malloc(2*PGSIZE);
+	void *ustack;
+ 
+	lock_init(&ulock);
+	lock_acquire(&ulock);
+
+	ustack = malloc(2*PGSIZE);
 	if((uint)ustack % PGSIZE)
      ustack = ustack + (PGSIZE - (uint)ustack % PGSIZE);
-    printf(1, "ustack in thread_create is: %d\n", (int)ustack); 
 
 	stackandpid *new_entry = &allstacks[num_stacks];
 	new_entry->stack = ustack;
     int pid = clone(start_routine, arg, ustack);
 	new_entry->pid = pid; 
-	num_stacks++;
- 
+	if (num_stacks < num) {
+		num_stacks++;
+	}
+	lock_release(&ulock); 
+
+	printf(1, "num_stacks is now: %d\n", num_stacks); 
     printf(1, "pid in thread_create is: %d\n", pid); 
+
 	return pid; 
 }

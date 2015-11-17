@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
   }
 
   printf(1, "thread creation completed (wait for 10 sec)\n");
+  printf(1, "global is: %d\n", global); 
   while (global < (num_threads+1)) {}
   printf(1, "joining threads\n");
 
@@ -48,6 +49,7 @@ int main(int argc, char *argv[])
   int join_count = 0;
   while (join_pid != -1) {
     join_pid = thread_join(-1);
+    printf(1, "join_pid is: %d\n", join_pid); 
     if (join_pid != -1) {
       join_count += 1;
     }
