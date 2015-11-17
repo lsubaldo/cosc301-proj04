@@ -615,10 +615,8 @@ join(int pid)       // only for child threads
     	havekids = 0;
     	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 			if(p->pid == pid) {
-				if (p->thread == 0) {
-					return -1;
-				}
-				if (p->parent->pid != proc->pid) {    // parent = process
+				if (p->thread == 0 || p->parent->pid != proc->pid) {
+					release(&ptable.lock);
 					return -1;
 				}
 			thread = p;     // has found the child thread 
@@ -626,7 +624,8 @@ join(int pid)       // only for child threads
 			}
 		}
 
-		if (thread == 0) {			
+		if (thread == 0) {	
+			release(&ptable.lock);		
 			return -1;
 		}
 

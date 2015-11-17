@@ -22,6 +22,7 @@ typedef struct __stackandpid {
 } stackandpid;
 
 int num = 64;
+
 stackandpid allstacks[64]; 
 
 int num_stacks = 0; 
