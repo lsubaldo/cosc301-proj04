@@ -125,18 +125,17 @@ growproc(int n)
 	}
   }
   proc->sz = sz;
-
-  if (proc->thread == 1) {
-	proc = proc->parent;
-    proc->sz = sz;
-  }
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-	if (p->parent == proc && p->thread == 1) {
-		proc->sz = sz; 
-	}
-  }
   release(&ptable.lock);
   switchuvm(proc);
+
+  //Letting all other threads/process that share the address space be aware of the change
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+	if (p->thread == 1 || proc->thread == 1) {
+		if (p->pgdir == proc->pgdir) {
+			p->sz = sz; 
+		}
+	}
+  }
   return 0;
 }
 

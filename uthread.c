@@ -14,8 +14,6 @@
  * This is where you'll need to implement the user-level functions
  */
 
-lock_t ulock;
-
 typedef struct __stackandpid {
 	void *stack;
 	int pid; 
@@ -62,9 +60,6 @@ int thread_join(int pid) {
 
 int thread_create(void (*start_routine)(void *), void *arg) {
 	void *ustack;
- 
-	lock_init(&ulock);
-	lock_acquire(&ulock);
 
 	ustack = malloc(2*PGSIZE);
 	if((uint)ustack % PGSIZE)
@@ -77,7 +72,6 @@ int thread_create(void (*start_routine)(void *), void *arg) {
 	if (num_stacks < num) {
 		num_stacks++;
 	}
-	lock_release(&ulock); 
 
 	printf(1, "num_stacks is now: %d\n", num_stacks); 
     printf(1, "pid in thread_create is: %d\n", pid); 
